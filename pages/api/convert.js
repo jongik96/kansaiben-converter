@@ -6,7 +6,8 @@ export default async function handler(req, res) {
 
     let prompt = '';
     if (dialect === 'kansaiben') {
-      prompt = `Convert the following text to Kansai dialect: ${text}`;
+      prompt = `次の文章を自然な実際の関西弁に変えてください。
+: ${text}`;
     } else if (dialect === 'hakataben') {
       prompt = `Convert the following text to Hakata dialect: ${text}`;
     } else if (dialect === 'nagoyaben') {
@@ -19,12 +20,12 @@ export default async function handler(req, res) {
       const response = await axios.post(
         'https://api.openai.com/v1/chat/completions',
         {
-          model: 'gpt-4',  // GPT-4 모델 사용
+          model: 'gpt-5-mini',  // GPT-5-mini 모델 사용
           messages: [
-            { role: 'system', content: 'You are a helpful assistant.' },
+            { role: 'system', content: 'You are a helpful assistant. and master of Japanaese.' },
             { role: 'user', content: prompt },  // 변환할 텍스트
           ],
-          max_tokens: 500,  // 최대 토큰 수
+          max_completion_tokens: 500,  // 최대 토큰 수
           temperature: 1,   // 창의성 설정
         },
         {
@@ -40,11 +41,7 @@ export default async function handler(req, res) {
 
       // 응답에서 변환된 텍스트 가져오기
       const message = response.data.choices[0]?.message;
-      if (!message || !message.content) {
-        return res.status(400).json({ error: '변환된 텍스트가 없습니다.' });
-      }
-
-      const result = message.content.trim();  // 변환된 텍스트 가져오기
+      const result = message?.content?.trim() || '';  // 변환된 텍스트 가져오기
 
       if (!result) {
         return res.status(400).json({ error: '변환된 텍스트가 없습니다.' });

@@ -38,7 +38,7 @@ export default function Kansaiben() {
       const result = data.kansaiben?.trim();  // 변환된 텍스트 가져오기
 
       if (!result) {
-        setError('변환된 텍스트가ありません');
+        setError('Please Input Text');
         return;
       }
 
