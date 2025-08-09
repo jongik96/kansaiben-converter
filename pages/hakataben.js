@@ -9,27 +9,31 @@ export default function Hakataben() {
   const [emotion, setEmotion] = useState('');
   const [showModal, setShowModal] = useState(false);
 
+  const cachedResults = {}; // 캐시 객체
+
+  // 텍스트를 음성으로 읽어주는 함수
+  const speakText = (text) => {
+    const synth = window.speechSynthesis;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = synth.getVoices().find(v => v.lang === 'ja-JP'); // 일본어 기본 음성
+    synth.speak(utterance); // 음성 합성
+  };
+
+  // 음성 듣기 버튼 클릭 시 음성을 출력하는 함수
+  const handleSpeakClick = () => {
+    speakText(result); // 변환된 텍스트를 음성으로 읽어줌
+  };
+
+  // 변환 버튼 클릭 시 API 호출
   const handleConvert = async () => {
+    if (cachedResults[text]) {
+      setResult(cachedResults[text]);
+      return;
+    }
+
     setLoading(true);
-
-    if (!text.trim()) {
-      alert("おっと！日本語を入力してね！");
-      setLoading(false);
-      return;
-    }
-
-    const isJapanese = /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/gu.test(text);
-    if (!isJapanese) {
-      alert("日本語だけを入力してくださいね！");
-      setLoading(false);
-      return;
-    }
-
-    if (text.length > 100) {
-      setShowModal(true);
-      setLoading(false);
-      return;
-    }
+    setResult('');
+    setError('');
 
     try {
       const response = await fetch('/api/convert', {
@@ -45,23 +49,13 @@ export default function Hakataben() {
       }
 
       const data = await response.json();
+      cachedResults[text] = data.hakataben; // 변환된 텍스트를 캐시
       setResult(data.hakataben);
     } catch (error) {
       setError(error.message);
     } finally {
       setLoading(false);
     }
-  };
-
-  const speakText = (text) => {
-    const synth = window.speechSynthesis;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.voice = synth.getVoices().find(v => v.lang === 'ja-JP');
-    synth.speak(utterance);
-  };
-
-  const handleSpeakClick = () => {
-    speakText(result);
   };
 
   const handleKeyDown = (e) => {

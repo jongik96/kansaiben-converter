@@ -1,34 +1,40 @@
+// pages/kansaiben.js
 import { useState } from 'react';
 
-export default function Home() {
+export default function Kansaiben() {
   const [text, setText] = useState('');
   const [result, setResult] = useState('');
-  const [loading, setLoading] = useState(false);  // 로딩 상태 관리
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [emotion, setEmotion] = useState('');
-  const [showModal, setShowModal] = useState(false);  // 경고 모달 상태 추가
+  const [showModal, setShowModal] = useState(false);
 
+  const cachedResults = {}; // 캐시 객체
+
+  // 텍스트를 음성으로 읽어주는 함수
+  const speakText = (text) => {
+    const synth = window.speechSynthesis;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = synth.getVoices().find(v => v.lang === 'ja-JP'); // 일본어 기본 음성
+    synth.speak(utterance); // 음성 합성
+  };
+
+  // 음성 듣기 버튼 클릭 시 음성을 출력하는 함수
+  const handleSpeakClick = () => {
+    speakText(result); // 변환된 텍스트를 음성으로 읽어줌
+  };
+
+  // 변환 버튼 클릭 시 API 호출
   const handleConvert = async () => {
-    setLoading(true); // 로딩 시작
-
-    if (!text.trim()) {
-      alert("おっと！日本語を入力してね！");
-      setLoading(false); // 로딩 끝
+    // 입력된 텍스트가 이미 캐시된 값이 있다면 바로 리턴
+    if (cachedResults[text]) {
+      setResult(cachedResults[text]);
       return;
     }
 
-    const isJapanese = /[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}]/gu.test(text);
-    if (!isJapanese) {
-      alert("日本語だけを入力してくださいね！");
-      setLoading(false); // 로딩 끝
-      return;
-    }
-
-    if (text.length > 100) {
-      setShowModal(true);
-      setLoading(false); // 로딩 끝
-      return;
-    }
+    setLoading(true);
+    setResult('');
+    setError('');
 
     try {
       const response = await fetch('/api/convert', {
@@ -36,7 +42,7 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text, emotion, dialect: 'kansaiben' }), // 사투리 지정
+        body: JSON.stringify({ text, emotion, dialect: 'kansaiben' }),
       });
 
       if (!response.ok) {
@@ -44,25 +50,13 @@ export default function Home() {
       }
 
       const data = await response.json();
-      setResult(data.kansaiben || data.hakataben || data.nagoyaben || data.aomoriben); // 동적으로 결과 저장
+      cachedResults[text] = data.kansaiben; // 변환된 텍스트를 캐시
+      setResult(data.kansaiben);
     } catch (error) {
       setError(error.message);
     } finally {
-      setLoading(false); // 로딩 끝
+      setLoading(false);
     }
-  };
-
-  // 텍스트를 음성으로 읽어주는 함수
-  const speakText = (text) => {
-    const synth = window.speechSynthesis;
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.voice = synth.getVoices().find(v => v.lang === 'ja-JP'); // 일본어 기본 음성
-    synth.speak(utterance);
-  };
-
-  // 음성 듣기 버튼 클릭 시 음성을 출력하는 함수
-  const handleSpeakClick = () => {
-    speakText(result);  // 변환된 텍스트를 음성으로 읽어줌
   };
 
   // 엔터키 눌렀을 때 변환 버튼 눌러지게
@@ -84,9 +78,9 @@ export default function Home() {
         maxLength="100"  // 최대 입력 글자수 100으로 제한
       />
       <div>
-        <span>{text.length} / 100</span>  {/* 글자 수 표시 */}
+        <span>{text.length} / 100</span>
       </div>
-      
+
       <div className="options">
         <label htmlFor="emotion">感情選択:</label>
         <select 
@@ -101,11 +95,11 @@ export default function Home() {
           <option value="excited">興奮している</option>
         </select>
       </div>
-      
+
       <button onClick={handleConvert} disabled={loading}>
         {loading ? '変換中...' : '関西弁に変換する'}
       </button>
-      
+
       {error && <p style={{ color: 'red' }}>{error}</p>}
       {result && (
         <div>
@@ -126,8 +120,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* 로딩 인디케이터 추가 */}
-      {loading && <div className="loading">変換中...</div>} {/* 로딩 인디케이터 */}
+      {loading && <div className="loading">変換中...</div>}
     </div>
   );
 }

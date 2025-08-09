@@ -20,30 +20,29 @@ export default async function handler(req, res) {
       const response = await axios.post(
         'https://api.openai.com/v1/chat/completions',
         {
-          model: 'gpt-5',  // GPT-5 모델
+          model: 'gpt-3.5-turbo', // 예시로 GPT-3.5 모델 사용, 필요 시 GPT-4로 변경
           messages: [
             { role: 'system', content: 'You are a helpful assistant.' },
-            { role: 'user', content: prompt }, // 변환할 텍스트
+            { role: 'user', content: prompt },
           ],
-          max_completion_tokens: 1000,  // max_tokens 대신 max_completion_tokens 사용
-          temperature: 1,  // temperature 값은 1로 설정
+          max_tokens: 1000,
+          temperature: 1,
         },
         {
           headers: {
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,  // 환경변수에서 API 키 불러오기
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,  // 환경변수 사용
             'Content-Type': 'application/json',
           },
         }
       );
 
-      // 동적으로 결과를 반환
       const result = response.data.choices[0].message.content.trim();
       res.status(200).json({ [dialect]: result });
     } catch (error) {
-      console.error("Error:", error.response?.data || error.message); // 에러 메시지 로깅
+      console.error("Error:", error.response?.data || error.message);
       res.status(500).json({ error: 'Failed to fetch data from OpenAI API' });
     }
   } else {
-    res.status(405).json({ error: 'Method Not Allowed' });  // POST 이외의 메소드 방지
+    res.status(405).json({ error: 'Method Not Allowed' });
   }
 }
