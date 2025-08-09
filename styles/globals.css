@@ -1,0 +1,142 @@
+/* styles/globals.css */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500&family=Dancing+Script:wght@400&display=swap');
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #d5f5e3; /* 파스텔 민트색 배경 */
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
+}
+
+h1 {
+  font-family: 'Dancing Script', cursive; /* 간사이벤 느낌의 귀여운 폰트 */
+  font-size: 3rem;
+  color: #34495e; /* 진한 회색 텍스트 */
+  margin-bottom: 20px;
+}
+
+textarea {
+  width: 80%;
+  height: 120px;
+  padding: 15px;
+  margin: 10px 0;
+  font-size: 1.2rem;
+  border: 2px solid #ffb6b9; /* 파스텔 핑크색 테두리 */
+  border-radius: 20px;
+  font-family: 'Poppins', sans-serif;
+  box-sizing: border-box;
+}
+
+button {
+  padding: 12px 25px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  border: none;
+  background-color: #ffb6b9; /* 파스텔 핑크 버튼 */
+  color: white;
+  border-radius: 20px;
+  font-family: 'Poppins', sans-serif;
+}
+
+button:disabled {
+  background-color: #aaa;
+}
+
+select {
+  padding: 10px;
+  margin: 10px;
+  font-size: 1rem;
+  border-radius: 20px;
+  border: 2px solid #ffb6b9; /* 파스텔 핑크 테두리 */
+}
+
+h2 {
+  font-size: 1.5rem;
+  margin-top: 20px;
+}
+
+p {
+  font-size: 1.2rem;
+  color: #333333; /* 검정색 텍스트 */
+}
+
+.options {
+  margin-bottom: 20px;
+}
+
+.options label {
+  font-size: 1rem;
+  color: #333333;
+}
+
+header {
+  background-color: #ffb6b9; /* 파스텔 핑크색 상단 메뉴 */
+  padding: 15px 0;
+  text-align: center;
+}
+
+header nav ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+header nav ul li {
+  display: inline;
+  margin: 0 15px;
+}
+
+header nav ul li a {
+  text-decoration: none;
+  color: white;
+  font-size: 1.2rem;
+}
+
+/* 귀여운 모달 스타일 */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 20px;  /* 동글동글한 모서리 */
+  text-align: center;
+  font-size: 1.2rem;
+  color: #333;
+  max-width: 300px;
+  width: 100%;
+}
+
+.modal button {
+  background-color: #ffb6b9; /* 파스텔 핑크색 버튼 */
+  color: white;
+  padding: 10px 20px;
+  border-radius: 15px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+/* styles/globals.css */
+.loading {
+  font-size: 1.5rem;
+  color: #ffb6b9;
+  margin-top: 20px;
+  text-align: center;
+}
