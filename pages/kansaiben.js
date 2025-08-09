@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function Kansaiben() {
   const [text, setText] = useState('');
@@ -36,11 +36,10 @@ export default function Kansaiben() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text, dialect: 'kansaiben' }),
+        body: JSON.stringify({ text, dialect: 'kansaiben' }), // 다이얼렉트 전달
       });
 
       if (!response.ok) {
-        // 응답이 실패한 경우 에러 처리
         throw new Error('変換エラー');
       }
 
