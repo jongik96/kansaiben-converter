@@ -1,32 +1,55 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-export async function getServerSideProps() {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-5-mini',
-      messages: [{ role: 'system', content: 'You are a helpful assistant.' }],
-      max_tokens: 200,
-      temperature: 0.7,
-    }),
-  });
-
-  const data = await res.json();
-  
-  return { props: { data } };  // 서버사이드에서 데이터를 가져온 후, props로 전달
-}
-
-export default function Kansaiben({ data }) {
+export default function Kansaiben() {
   const [text, setText] = useState('');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // 텍스트를 음성으로 읽어주는 함수
+  useEffect(() => {
+    // 페이지 로드 후에만 실행될 fetch 요청
+    const fetchData = async () => {
+      if (!text.trim()) return;
+
+      setLoading(true);
+      setResult('');
+      setError('');
+
+      try {
+        const response = await fetch('/api/convert', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text, dialect: 'kansaiben' }),
+        });
+
+        if (!response.ok) {
+          throw new Error('変換エラー');
+        }
+
+        const data = await response.json();
+
+        const result = data.kansaiben?.trim();  // 변환된 텍스트 가져오기
+
+        if (!result) {
+          setError('変換されたテキストがありません');
+          return;
+        }
+
+        setResult(result);  // 변환된 텍스트 화면에 출력
+      } catch (error) {
+        console.error('Error:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false); // 로딩 상태 종료
+      }
+    };
+
+    fetchData(); // useEffect 내에서만 실행되는 fetch 요청
+
+  }, [text]); // text가 변경될 때마다 실행
+
   const speakText = (text) => {
     const synth = window.speechSynthesis;
     
@@ -40,46 +63,6 @@ export default function Kansaiben({ data }) {
     synth.speak(utterance);
   };
 
-  const handleConvert = async () => {
-    if (!text.trim()) {
-      alert("おっと！日本語を入力してね！");
-      return;
-    }
-
-    setLoading(true);
-    setResult('');
-    setError('');
-
-    try {
-      const response = await fetch('/api/convert', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text, dialect: 'kansaiben' }),
-      });
-
-      if (!response.ok) {
-        throw new Error('変換エラー');
-      }
-
-      const data = await response.json();
-      const result = data.kansaiben?.trim();  // 변환된 텍스트 가져오기
-
-      if (!result) {
-        setError('変換結果がありません');
-        return;
-      }
-
-      setResult(result);  // 변환된 텍스트 화면에 출력
-    } catch (error) {
-      console.error('Error:', error);
-      setError(error.message);
-    } finally {
-      setLoading(false); // 로딩 상태 종료
-    }
-  };
-
   return (
     <div className="container">
       <h1>関西弁変換ツール</h1>
@@ -88,7 +71,7 @@ export default function Kansaiben({ data }) {
         onChange={(e) => setText(e.target.value)}
         placeholder="ここに標準日本語を入力してください"
       />
-      <button onClick={handleConvert} disabled={loading}>
+      <button onClick={() => setText(text)} disabled={loading}>
         {loading ? '変換中...' : '関西弁に変換する'}
       </button>
 

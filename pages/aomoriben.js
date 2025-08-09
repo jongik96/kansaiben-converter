@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function Aomoriben() {
   const [text, setText] = useState('');
@@ -6,36 +6,61 @@ export default function Aomoriben() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleConvert = async () => {
-    if (!text.trim()) {
-      alert("おっと！日本語を入力してね！");
-      return;
-    }
+  useEffect(() => {
+    // 페이지 로드 후에만 실행될 fetch 요청
+    const fetchData = async () => {
+      if (!text.trim()) return;
 
-    setLoading(true);
-    setResult('');
-    setError('');
+      setLoading(true);
+      setResult('');
+      setError('');
 
-    try {
-      const response = await fetch('/api/convert', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text, dialect: 'aomoriben' }), // 아오모리벤 변환
-      });
+      try {
+        const response = await fetch('/api/convert', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ text, dialect: 'aomoriben' }),
+        });
 
-      if (!response.ok) {
-        throw new Error('変換エラー');
+        if (!response.ok) {
+          throw new Error('変換エラー');
+        }
+
+        const data = await response.json();
+
+        const result = data.aomoriben?.trim();  // 변환된 텍스트 가져오기
+
+        if (!result) {
+          setError('変換されたテキストがありません');
+          return;
+        }
+
+        setResult(result);  // 변환된 텍스트 화면에 출력
+      } catch (error) {
+        console.error('Error:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false); // 로딩 상태 종료
       }
+    };
 
-      const data = await response.json();
-      setResult(data.aomoriben); // 변환된 텍스트 출력
-    } catch (error) {
-      setError(error.message);
-    } finally {
-      setLoading(false);
+    fetchData(); // useEffect 내에서만 실행되는 fetch 요청
+
+  }, [text]); // text가 변경될 때마다 실행
+
+  const speakText = (text) => {
+    const synth = window.speechSynthesis;
+    
+    // 이전 음성 중지
+    if (synth.speaking) {
+      synth.cancel();
     }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = synth.getVoices().find(v => v.lang === 'ja-JP'); // 일본어 음성
+    synth.speak(utterance);
   };
 
   return (
@@ -46,12 +71,18 @@ export default function Aomoriben() {
         onChange={(e) => setText(e.target.value)}
         placeholder="ここに標準日本語を入力してください"
       />
-      <button onClick={handleConvert} disabled={loading}>
+      <button onClick={() => setText(text)} disabled={loading}>
         {loading ? '変換中...' : '青森弁に変換する'}
       </button>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
-      {result && <div><h2>変換結果:</h2><p>{result}</p></div>}
+      {result && (
+        <div>
+          <h2>変換結果:</h2>
+          <p>{result}</p>
+          <button onClick={() => speakText(result)}>音声で読む</button> {/* 음성으로 읽어주기 버튼 */}
+        </div>
+      )}
     </div>
   );
 }
