@@ -1,15 +1,20 @@
-// pages/aomoriben.js
 import { useState } from 'react';
+import satoridic from '../public/satoridic.json';  // JSON 파일 경로
 
 export default function Aomoriben() {
   const [text, setText] = useState('');
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [emotion, setEmotion] = useState('');
   const [showModal, setShowModal] = useState(false);
 
   const cachedResults = {}; // 캐시 객체
+
+  // JSON 파일에서 변환 규칙을 가져오는 함수
+  const getDialectFromJson = (text, dialect) => {
+    const dialectData = satoridic[dialect];
+    return dialectData[text] || null; // 변환 가능하면 바로 반환, 없으면 null
+  };
 
   // 텍스트를 음성으로 읽어주는 함수
   const speakText = (text) => {
@@ -26,22 +31,25 @@ export default function Aomoriben() {
 
   // 변환 버튼 클릭 시 API 호출
   const handleConvert = async () => {
-    if (cachedResults[text]) {
-      setResult(cachedResults[text]);
+    // JSON에서 변환 가능한 텍스트를 바로 처리
+    const dialect = 'aomoriben'; // 현재 아오모리벤
+    const convertedText = getDialectFromJson(text, dialect);
+
+    if (convertedText) {
+      setResult(convertedText); // 변환된 텍스트 바로 출력
+      cachedResults[text] = convertedText; // 캐시
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
-    setResult('');
-    setError('');
-
+    // JSON에 없으면 OpenAI API 호출
     try {
       const response = await fetch('/api/convert', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text, emotion, dialect: 'aomoriben' }),
+        body: JSON.stringify({ text, dialect }),
       });
 
       if (!response.ok) {
@@ -49,7 +57,7 @@ export default function Aomoriben() {
       }
 
       const data = await response.json();
-      cachedResults[text] = data.aomoriben; // 변환된 텍스트를 캐시
+      cachedResults[text] = data.aomoriben; // 변환된 텍스트 캐시
       setResult(data.aomoriben);
     } catch (error) {
       setError(error.message);
@@ -77,21 +85,6 @@ export default function Aomoriben() {
       />
       <div>
         <span>{text.length} / 100</span>
-      </div>
-
-      <div className="options">
-        <label htmlFor="emotion">感情選択:</label>
-        <select 
-          id="emotion"
-          value={emotion}
-          onChange={(e) => setEmotion(e.target.value)}
-        >
-          <option value="">感情を選んでください</option>
-          <option value="happy">嬉しい</option>
-          <option value="sad">悲しい</option>
-          <option value="angry">怒っている</option>
-          <option value="excited">興奮している</option>
-        </select>
       </div>
 
       <button onClick={handleConvert} disabled={loading}>

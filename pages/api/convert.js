@@ -20,7 +20,7 @@ export default async function handler(req, res) {
       const response = await axios.post(
         'https://api.openai.com/v1/chat/completions',
         {
-          model: 'gpt-3.5-turbo', // 예시로 GPT-3.5 모델 사용, 필요 시 GPT-4로 변경
+          model: 'gpt-3.5-turbo',  // 예시로 GPT-3.5 모델 사용
           messages: [
             { role: 'system', content: 'You are a helpful assistant.' },
             { role: 'user', content: prompt },
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
         },
         {
           headers: {
-            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,  // 환경변수 사용
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
             'Content-Type': 'application/json',
           },
         }
