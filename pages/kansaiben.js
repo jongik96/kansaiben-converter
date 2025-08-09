@@ -6,6 +6,20 @@ export default function Kansaiben() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // 텍스트를 음성으로 읽어주는 함수
+  const speakText = (text) => {
+    const synth = window.speechSynthesis;
+    
+    // 이전 음성 중지
+    if (synth.speaking) {
+      synth.cancel();
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = synth.getVoices().find(v => v.lang === 'ja-JP'); // 일본어 음성
+    synth.speak(utterance);
+  };
+
   const handleConvert = async () => {
     if (!text.trim()) {
       alert("おっと！日本語を入力してね！");
@@ -64,7 +78,13 @@ export default function Kansaiben() {
       </button>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
-      {result && <div><h2>変換結果:</h2><p>{result}</p></div>}
+      {result && (
+        <div>
+          <h2>変換結果:</h2>
+          <p>{result}</p>
+          <button onClick={() => speakText(result)}>音声で読む</button> {/* 음성으로 읽어주기 버튼 */}
+        </div>
+      )}
     </div>
   );
 }
