@@ -6,62 +6,42 @@ export default function Kansaiben() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // 텍스트를 음성으로 읽어주는 함수
-  const speakText = (text) => {
+  const speakText = (t) => {
     const synth = window.speechSynthesis;
-    
-    // 이전 음성 중지
-    if (synth.speaking) {
-      synth.cancel();
-    }
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.voice = synth.getVoices().find(v => v.lang === 'ja-JP'); // 일본어 음성
-    synth.speak(utterance);
+    if (synth.speaking) synth.cancel();
+    const utter = new SpeechSynthesisUtterance(t);
+    utter.voice = synth.getVoices().find(v => v.lang === 'ja-JP');
+    synth.speak(utter);
   };
 
+  const addPunctuation = (t) => (t && !/[.!?。]$/.test(t) ? t + '。' : t);
+
   const handleConvert = async () => {
+    console.log("text: ",text)
     if (!text.trim()) {
-      alert("おっと！日本語を入力してね！");
+      alert('おっと！日本語を入力してね！');
       return;
     }
-
     setLoading(true);
     setResult('');
     setError('');
-
     try {
-      const response = await fetch('/api/convert', {
+      const formattedText = addPunctuation(text);
+      console.log(formattedText)
+      const res = await fetch('/api/convert', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text, dialect: 'kansaiben' }), // 다이얼렉트 전달
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: formattedText, dialect: 'kansaiben' }),
       });
-
-      if (!response.ok) {
-        throw new Error('変換エラー');
-      }
-
-      const data = await response.json();
-
-      // 응답 데이터 확인용 로그 추가
-      console.log('API Response:', data);
-
-      // 변환된 텍스트가 비어있지 않으면 출력
-      const result = data.kansaiben?.trim();  // 변환된 텍스트 가져오기
-
-      if (!result) {
-        setError('Please Input Text');
-        return;
-      }
-
-      setResult(result);  // 텍스트가 비어있지 않으면 화면에 출력
-    } catch (error) {
-      console.error('Error:', error);
-      setError(error.message);
+      if (!res.ok) throw new Error('変換エラー');
+      const data = await res.json();
+      const out = data.kansaiben?.trim();
+      if (!out) { setError('変換されたテキストがありません'); return; }
+      setResult(out);
+    } catch (e) {
+      setError(e.message);
     } finally {
-      setLoading(false); // 로딩 상태 종료
+      setLoading(false);
     }
   };
 
@@ -82,7 +62,7 @@ export default function Kansaiben() {
         <div>
           <h2>変換結果:</h2>
           <p>{result}</p>
-          <button onClick={() => speakText(result)}>音声で読む</button> {/* 음성으로 읽어주기 버튼 */}
+          <button onClick={() => speakText(result)}>音声で読む</button>
         </div>
       )}
     </div>

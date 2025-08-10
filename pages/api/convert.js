@@ -1,59 +1,86 @@
 import axios from 'axios';
 
+// 일본어 입력 길이에 따라 안전하게 completion 토큰 상한 계산
+function calcMaxCompletionTokens(input) {
+  const len = Array.from(input ?? '').length;
+  if (len <= 15) return 500;
+  if (len <= 50) return 1000;
+  if (len <= 100) return 1500;
+  return 3000;
+}
+
+// length로 잘리면 1회만 재시도 (토큰 여유를 늘려 재요청)
+async function callOpenAI({ prompt, maxTokens }) {
+  const resp = await axios.post(
+    'https://api.openai.com/v1/chat/completions',
+    {
+      model: 'gpt-5-mini',
+      messages: [
+        { role: 'system', content: 'You are a helpful assistant.' },
+        { role: 'user', content: prompt },
+      ],
+      max_completion_tokens: maxTokens,
+      // temperature는 기본값(1) 그대로 — 명시 설정하지 않음
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  return resp.data;
+}
+
 export default async function handler(req, res) {
-  if (req.method === 'POST') {
-    const { text, dialect } = req.body;
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
 
-    let prompt = '';
-    if (dialect === 'kansaiben') {
-      prompt = `次の文章を自然な実際の関西弁に変えてください。
-: ${text}`;
-    } else if (dialect === 'hakataben') {
-      prompt = `Convert the following text to Hakata dialect: ${text}`;
-    } else if (dialect === 'nagoyaben') {
-      prompt = `Convert the following text to Nagoya dialect: ${text}`;
-    } else if (dialect === 'aomoriben') {
-      prompt = `Convert the following text to Aomori dialect: ${text}`;
-    }
+  const { text, dialect } = req.body;
 
-    try {
-      const response = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
-        {
-          model: 'gpt-5-mini',  // GPT-5-mini 모델 사용
-          messages: [
-            { role: 'system', content: 'You are a helpful assistant. and master of Japanaese.' },
-            { role: 'user', content: prompt },  // 변환할 텍스트
-          ],
-          max_completion_tokens: 500,  // 최대 토큰 수
-          temperature: 1,   // 창의성 설정
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_OPENAI_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+  if (!text || !dialect) {
+    return res.status(400).json({ error: 'Text and dialect are required.' });
+  }
 
-      // 응답 구조 확인용 로그
-      console.log('API Response:', response.data);
-
-      // 응답에서 변환된 텍스트 가져오기
-      const message = response.data.choices[0]?.message;
-      const result = message?.content?.trim() || '';  // 변환된 텍스트 가져오기
-
-      if (!result) {
-        return res.status(400).json({ error: '변환된 텍스트가 없습니다.' });
-      }
-
-      // 변환된 텍스트 반환
-      res.status(200).json({ [dialect]: result });
-    } catch (error) {
-      console.error("Error:", error.response?.data || error.message);
-      res.status(500).json({ error: 'Failed to fetch data from OpenAI API' });
-    }
+  let prompt = '';
+  if (dialect === 'kansaiben') {
+    prompt = `次の文を関西弁に変換して下さい。他の説明は付け加えないでください: ${text}`;
+  } else if (dialect === 'hakataben') {
+    prompt = `次の文を博多弁に変換して下さい。他の説明は付け加えないでください: ${text}`;
+  } else if (dialect === 'nagoyaben') {
+    prompt = `次の文を名古屋弁に変換して下さい。他の説明は付け加えないでください: ${text}`;
+  } else if (dialect === 'aomoriben') {
+    prompt = `次の文を青森弁に変換して下さい。他の説明は付け加えないでください: ${text}`;
   } else {
-    res.status(405).json({ error: 'Method Not Allowed' });
+    return res.status(400).json({ error: 'Unsupported dialect.' });
+  }
+
+  const initialMax = calcMaxCompletionTokens(text);
+
+  try {
+    // 1차 호출
+    const data1 = await callOpenAI({ prompt, maxTokens: initialMax });
+    const choice1 = data1?.choices?.[0];
+    const content1 = choice1?.message?.content?.trim();
+
+    if (content1 && choice1?.finish_reason !== 'length') {
+      return res.status(200).json({ [dialect]: content1 });
+    }
+
+    // 길이 제한으로 잘린 경우 1회 재시도 (여유 토큰 +120, 상한 400)
+    const boostedMax = Math.min(initialMax + 120, 400);
+    const data2 = await callOpenAI({ prompt, maxTokens: boostedMax });
+    const choice2 = data2?.choices?.[0];
+    const content2 = choice2?.message?.content?.trim();
+
+    if (content2) {
+      return res.status(200).json({ [dialect]: content2 });
+    }
+
+    return res.status(400).json({ error: '変換されたテキストがありません' });
+  } catch (error) {
+    console.error('OpenAI Error:', error.response?.data || error.message);
+    return res.status(500).json({ error: 'Failed to fetch data from OpenAI API' });
   }
 }
