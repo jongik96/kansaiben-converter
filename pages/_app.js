@@ -6,7 +6,7 @@ function MyApp({ Component, pageProps }) {
   return (
     <div>
       {/* 상단 메뉴 */}
-      <header className="header">
+      {/* <header className="header">
         <nav>
           <ul>
             <li><Link href="/kansaiben">関西弁</Link></li>
@@ -15,7 +15,7 @@ function MyApp({ Component, pageProps }) {
             <li><Link href="/aomoriben">青森弁</Link></li>
           </ul>
         </nav>
-      </header>
+      </header> */}
       
       <Component {...pageProps} />
     </div>
