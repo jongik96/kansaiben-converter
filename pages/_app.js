@@ -1,6 +1,7 @@
 // pages/_app.js
 import Link from 'next/link';
 import '../styles/globals.css';
+import { Analytics } from '@vercel/analytics/react';
 
 function MyApp({ Component, pageProps }) {
   return (
@@ -18,6 +19,7 @@ function MyApp({ Component, pageProps }) {
       </header> */}
       
       <Component {...pageProps} />
+       <Analytics /> {/* Vercel Analytics */}
     </div>
   );
 }
